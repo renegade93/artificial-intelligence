@@ -35,7 +35,7 @@ def depthFirstSearch(problem: SearchProblem):
         currNeighbors = currState[1]
 
         # check if current node is the goal
-        if problem.isGoalState(currState[0]):
+        if problem.isGoalState(currNode):
             print(stack.list)
             return path
         
