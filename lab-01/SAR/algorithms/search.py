@@ -65,8 +65,51 @@ def breadthFirstSearch(problem: SearchProblem):
     """
     Search the shallowest nodes in the search tree first.
     """
-    # TODO: Add your code here
-    utils.raiseNotDefined()
+    queue = utils.Queue()
+    startNode = problem.getStartState()
+    initialNeighbors = problem.getSuccessors(problem.getStartState())
+    queue.push([startNode, initialNeighbors])  
+    visited = set()
+    
+    # this will keep track of the parent node to reconstruct the path 
+    parentMap = {}
+    parentMap[startNode] = None
+
+    while not queue.isEmpty():
+        currState = queue.pop()
+        currNode = currState[0]
+        neighbors = currState[1]
+
+        if problem.isGoalState(currNode):
+            goalNode = currNode
+            return _build_bfs_path(parentMap, startNode, goalNode)
+        
+        # for all neighbors of the current node, if not visited, add to queue and mark as visited
+        for neighbor in neighbors: 
+            node = neighbor[0]
+            direction = neighbor[1]
+
+            if node not in visited:
+                visited.add(node)
+
+                neighbors = problem.getSuccessors(node)
+                queue.push([node,neighbors])
+                parentMap[node] = (currNode, direction)
+    return -1
+
+
+def _build_bfs_path(parentMap, startNode, goalNode):
+    path = []
+    currentNode = goalNode 
+     
+    while currentNode != startNode:
+        parent = parentMap[currentNode][0]
+        direction = parentMap[currentNode][1]
+
+        path.append(direction)
+        currentNode = parent
+    # python trick to reverse list since we started backwards
+    return path[::-1]
 
 
 def uniformCostSearch(problem: SearchProblem):
