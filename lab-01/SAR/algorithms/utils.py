@@ -28,6 +28,14 @@ class Stack:
         Returns true if the stack is empty
         """
         return len(self.list) == 0
+    
+    def peek(self):
+        """
+        Returns the top item without removing it from the stack
+        """
+        if self.isEmpty():
+            return None
+        return self.list[-1]
 
 
 class Queue:

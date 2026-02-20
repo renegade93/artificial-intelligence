@@ -20,16 +20,45 @@ def depthFirstSearch(problem: SearchProblem):
 
     Your search algorithm needs to return a list of actions that reaches the
     goal. Make sure to implement a graph search algorithm.
-
-    To get started, you might want to try some of these simple commands to
-    understand the search problem that is being passed in:
-
-    print("Start:", problem.getStartState())
-    print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
-    print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    # TODO: Add your code here
-    utils.raiseNotDefined()
+    # initialize dfs
+    stack = utils.Stack()
+    startState = problem.getStartState()
+    initialNeighbors = problem.getSuccessors(problem.getStartState())
+    stack.push([startState, initialNeighbors, None ])  
+    visited = []
+    path = []
+
+    while not stack.isEmpty():
+        currState = stack.peek()
+        currNode = currState[0]
+        currNeighbors = currState[1]
+
+        # check if current node is the goal
+        if problem.isGoalState(currNode):
+            print(stack.list)
+            return path
+        
+        # visit node
+        visited.append(currNode)
+
+        # check last neighbor of current node 
+        if not len(currNeighbors) == 0:
+            lastNeighbor = currNeighbors.pop()
+            lastNeighborCoord = lastNeighbor[0]
+            lastNeighborAction = lastNeighbor[1]
+
+            # if last neighbor not visited, add to the stack
+            if lastNeighborCoord not in visited:
+                nextSuccesors = problem.getSuccessors(lastNeighborCoord)
+                stack.push([lastNeighborCoord, nextSuccesors, lastNeighborAction])
+                path.append(lastNeighborAction)
+        else:
+            # if dead end, pop stack
+            stack.pop()
+            path.pop()
+    return -1
+
 
 
 def breadthFirstSearch(problem: SearchProblem):
