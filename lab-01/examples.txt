@@ -1,0 +1,9 @@
+# Example Multisurvivor
+/usr/local/bin/python3 -p MultiSurvivorProblem -f aStarSearch -h survivorHeuristic -l campgroundRescue -x 0.1 -z 1.0
+
+
+# Example SingleSurvivor
+/usr/local/bin/python3 -p SimpleSurvivorProblem -f bfs -l burningOffice -x 0.5 -z 1.0
+/usr/local/bin/python3 -p SimpleSurvivorProblem -f dfs -l burningOffice -x 0.5 -z 1.0
+/usr/local/bin/python3 -p SimpleSurvivorProblem -f uniformCostSearch -l burningOffice -x 0.5 -z 1.0
+/usr/local/bin/python3 -p SimpleSurvivorProblem -f aStarSearch -h manhattanHeuristic -l burningOffice -x 0.5 -z 1.0-p 
