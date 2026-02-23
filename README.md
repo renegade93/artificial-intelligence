@@ -1,8 +1,4 @@
 # Artificial Intelligence Code Repository – Projects & Labs
-
-Welcome to the official repository for this university course.  
-This repo contains **labs, projects, experiments, and supporting material** developed throughout the semester.
-
 ---
 
 ## Purpose
