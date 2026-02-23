@@ -3,7 +3,6 @@ import algorithms.utils as utils
 from world.game import Directions
 from algorithms.heuristics import nullHeuristic
 
-
 def tinyHouseSearch(problem: SearchProblem):
     """
     Returns a sequence of moves that solves tinyHouse. For any other building, the
@@ -60,8 +59,8 @@ def depthFirstSearch(problem: SearchProblem):
     return []
 
 
-
 def breadthFirstSearch(problem: SearchProblem):
+    
     """
     Search the shallowest nodes in the search tree first.
     """
@@ -81,7 +80,7 @@ def breadthFirstSearch(problem: SearchProblem):
         neighbors = currState[1]
 
         if problem.isGoalState(currNode):
-            return _buildBfsPath(parentMap, startNode, currNode)
+            return _buildPath(parentMap, startNode, currNode)
         
         # for all neighbors of the current node, if not visited, add to queue and mark as visited
         for neighbor in neighbors: 
@@ -97,6 +96,17 @@ def breadthFirstSearch(problem: SearchProblem):
     return []
 
 
+def uniformCostSearch(problem: SearchProblem):
+   return _lowestCostPath(problem)
+
+
+def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
+    """
+    Search the node that has the lowest combined cost and heuristic first.
+    """
+    return _lowestCostPath(problem, heuristic)
+
+# Helpers
 def _buildPath(parentMap, startNode, goalNode):
     path = []
     currentNode = goalNode 
@@ -111,10 +121,7 @@ def _buildPath(parentMap, startNode, goalNode):
     return path[::-1]
 
 
-def uniformCostSearch(problem: SearchProblem):
-    """
-    Search the node of least total cost first.
-    """
+def _lowestCostPath(problem: SearchProblem, heuristic=nullHeuristic):
     INFINITY = float('inf')
 
     pq = utils.PriorityQueue()
@@ -144,18 +151,16 @@ def uniformCostSearch(problem: SearchProblem):
                 neighborCost = neighbor[2]
                 newCost = costs.get(currentNode) + neighborCost
 
+                if heuristic is nullHeuristic:
+                    priority = newCost
+                else:
+                    priority = newCost + heuristic(neighborNode, problem)
+
                 if neighborNode not in costs or newCost < costs.get(neighborNode):
                    costs[neighborNode] = newCost
                    came_from[neighborNode] = [currentNode, neighBorDirection]
-                   pq.push(neighborNode, newCost)
+                   pq.push(neighborNode, priority)
     return []
-
-def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
-    """
-    Search the node that has the lowest combined cost and heuristic first.
-    """
-    # TODO: Add your code here
-    utils.raiseNotDefined()
 
 
 # Abbreviations (you can use them for the -f option in main.py)
