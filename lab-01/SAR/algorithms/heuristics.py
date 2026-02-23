@@ -16,11 +16,7 @@ def manhattanHeuristic(state, problem):
     """
     The Manhattan distance heuristic.
     """
-    survivor = problem.goal
-    dx = survivor[0] - state[0]
-    dy = survivor[1] - state[1]
-
-    return abs(dx) + abs(dy)
+    return _manhattan(state, problem.goal)
 
 
 def euclideanHeuristic(state, problem):
@@ -48,5 +44,45 @@ def survivorHeuristic(state: Tuple[Tuple, Any], problem: MultiSurvivorProblem):
     - Consider: distance to nearest survivor + MST of remaining survivors
     - Balance heuristic strength vs. computation time (do experiments!)
     """
-    # TODO: Add your code here
-    utils.raiseNotDefined()
+    startNode = state[0]
+    survivorsGrid = state[1]
+    survivors = survivorsGrid.asList(key=True)
+    
+    if len(survivors) == 0:
+        return 0
+
+    survivorsCopy = survivors.copy()
+    survivorsCopy.append(startNode)
+    
+    return _primMSTWeight(survivorsCopy)
+
+# DISCLAIMER: most of this method was written with the aid of Claude
+# (I asked it to generate seudo code for PRIM's algorithm, and then translated that into code)
+def _primMSTWeight(nodes):
+    INFINITY = float('inf')
+
+    if len(nodes) == 1:
+        return 0
+
+    visited = {nodes[0]}
+    total_cost = 0
+
+    while len(visited) < len(nodes):
+        best_cost = INFINITY
+        best_node = None
+
+        for x in visited:
+            for y in nodes:
+                if y not in visited:
+                    dist = _manhattan(x, y)
+                    if dist < best_cost:
+                        best_cost = dist
+                        best_node = y
+
+        total_cost += best_cost
+        visited.add(best_node)
+
+    return total_cost
+
+def _manhattan(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
