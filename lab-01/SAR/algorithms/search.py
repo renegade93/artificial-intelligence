@@ -57,7 +57,7 @@ def depthFirstSearch(problem: SearchProblem):
             # if dead end, pop stack
             stack.pop()
             path.pop()
-    return -1
+    return []
 
 
 
@@ -81,8 +81,7 @@ def breadthFirstSearch(problem: SearchProblem):
         neighbors = currState[1]
 
         if problem.isGoalState(currNode):
-            goalNode = currNode
-            return _build_bfs_path(parentMap, startNode, goalNode)
+            return _buildBfsPath(parentMap, startNode, currNode)
         
         # for all neighbors of the current node, if not visited, add to queue and mark as visited
         for neighbor in neighbors: 
@@ -95,10 +94,10 @@ def breadthFirstSearch(problem: SearchProblem):
                 neighbors = problem.getSuccessors(node)
                 queue.push([node,neighbors])
                 parentMap[node] = (currNode, direction)
-    return -1
+    return []
 
 
-def _build_bfs_path(parentMap, startNode, goalNode):
+def _buildPath(parentMap, startNode, goalNode):
     path = []
     currentNode = goalNode 
      
@@ -116,10 +115,40 @@ def uniformCostSearch(problem: SearchProblem):
     """
     Search the node of least total cost first.
     """
+    INFINITY = float('inf')
 
-    # TODO: Add your code here
-    utils.raiseNotDefined()
+    pq = utils.PriorityQueue()
+    startNode = problem.getStartState()
+    pq.push(startNode, INFINITY)
 
+    visited = set()
+    costs = { startNode: 0 }
+    came_from = { startNode: None }
+
+    while not pq.isEmpty():
+        # pop the node with the lowest travel cost
+        currentNode = pq.pop()
+
+        if problem.isGoalState(currentNode):
+            return _buildPath(came_from, startNode, currentNode)
+                
+        if currentNode not in visited:
+            visited.add(currentNode)
+            initialNeighbors = problem.getSuccessors(currentNode)
+
+            # check all neighbors of the current node and update travel cost if cheaper path found
+            # this makes the came_from map cheapest path to target
+            for neighbor in initialNeighbors:
+                neighborNode = neighbor[0]
+                neighBorDirection = neighbor[1]
+                neighborCost = neighbor[2]
+                newCost = costs.get(currentNode) + neighborCost
+
+                if neighborNode not in costs or newCost < costs.get(neighborNode):
+                   costs[neighborNode] = newCost
+                   came_from[neighborNode] = [currentNode, neighBorDirection]
+                   pq.push(neighborNode, newCost)
+    return []
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """
