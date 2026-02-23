@@ -80,7 +80,7 @@ def breadthFirstSearch(problem: SearchProblem):
         neighbors = currState[1]
 
         if problem.isGoalState(currNode):
-            return _buildBfsPath(parentMap, startNode, currNode)
+            return _buildPath(parentMap, startNode, currNode)
         
         # for all neighbors of the current node, if not visited, add to queue and mark as visited
         for neighbor in neighbors: 
@@ -104,8 +104,7 @@ def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """
     Search the node that has the lowest combined cost and heuristic first.
     """
-    # TODO: Add your code here
-    utils.raiseNotDefined()
+    return _lowestCostPath(problem, heuristic)
 
 # Helpers
 def _buildPath(parentMap, startNode, goalNode):
