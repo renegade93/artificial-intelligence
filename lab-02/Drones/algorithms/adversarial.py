@@ -50,6 +50,10 @@ class MinimaxAgent(MultiAgentSearchAgent):
     Minimax agent for the drone (MAX) vs hunters (MIN) game.
     """
 
+    def __init__(self, depth: str = "2", _index: int = 0, prob: str = "0.0"):
+        super().__init__(depth, _index, prob)
+        self.visit_counts = {}
+
     def get_action(self, state: GameState) -> Directions | None:
         """
         Returns the best action for the drone using minimax.
@@ -66,7 +70,66 @@ class MinimaxAgent(MultiAgentSearchAgent):
         - Return the ACTION (not the value) that maximizes the minimax value for the drone.
         """
         # TODO: Implement your code here
-        return None
+        num_agents = state.get_num_agents()
+
+        def minimax(current_state: GameState, agent_index: int, depth: int) -> float:
+
+            if current_state.is_win() or current_state.is_lose():
+                return self.evaluation_function(current_state)
+
+            if depth == 0:
+                return self.evaluation_function(current_state)
+
+            legal_actions = current_state.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(current_state)
+
+            next_agent = (agent_index + 1) % num_agents
+            next_depth = depth - 1 if next_agent == 0 else depth
+
+            if agent_index == 0:
+                best_value = float("-inf")
+                for action in legal_actions:
+                    successor_state = current_state.generate_successor(agent_index, action)
+                    value = minimax(successor_state, next_agent, next_depth)
+                    best_value = max(best_value, value)
+                return best_value
+
+            else:
+                best_value = float("inf")
+                for action in legal_actions:
+                    successor_state = current_state.generate_successor(agent_index, action)
+                    value = minimax(successor_state, next_agent, next_depth)
+                    best_value = min(best_value, value)
+                return best_value
+
+        legal_actions = state.get_legal_actions(0)
+        if not legal_actions:
+            return None
+
+        current_pos = state.get_drone_position()
+        self.visit_counts[current_pos] = self.visit_counts.get(current_pos, 0) + 1
+
+        best_action = None
+        best_value = float("-inf")
+
+        for action in legal_actions:
+            successor_state = state.generate_successor(0, action)
+
+            if num_agents == 1:
+                value = minimax(successor_state, 0, self.depth - 1)
+            else:
+                value = minimax(successor_state, 1, self.depth)
+
+            successor_pos = successor_state.get_drone_position()
+            revisit_penalty = 10 * self.visit_counts.get(successor_pos, 0)
+            value -= revisit_penalty
+
+            if value > best_value:
+                best_value = value
+                best_action = action
+
+        return best_action
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -123,5 +186,53 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         - Do NOT prune in expectimax (unlike alpha-beta).
         - self.prob is set via the constructor argument prob.
         """
-        # TODO: Implement your code here
-        return None
+        legal_actions = state.get_legal_actions(self.index)
+        if not legal_actions:
+            return None
+
+        best_action = None
+        best_value = float("-inf")
+
+        for action in legal_actions:
+            successor = state.generate_successor(self.index, action)
+            value = self._expectimax(successor, self.depth, 1)
+            if value > best_value:
+                best_value = value
+                best_action = action
+
+        return best_action
+
+    def _expectimax(self, state: GameState, depth: int, agent_index: int) -> float:
+        """
+        Recursive expectimax: MAX for drone, CHANCE for hunters.
+        """
+        if depth == 0 or state.is_win() or state.is_lose():
+            return self.evaluation_function(state)
+
+        num_agents = state.get_num_agents()
+        next_agent = (agent_index + 1) % num_agents
+        next_depth = depth - 1 if next_agent == 0 else depth
+
+        legal_actions = state.get_legal_actions(agent_index)
+        if not legal_actions:
+            return self.evaluation_function(state)
+
+        if agent_index == 0:
+            # Nodo dron 
+            max_value = float("-inf")
+            for action in legal_actions:
+                successor = state.generate_successor(agent_index, action)
+                value = self._expectimax(successor, next_depth, next_agent)
+                max_value = max(max_value, value)
+            return max_value
+        else:
+            # Nodo cazdorr 
+            values = []
+            for action in legal_actions:
+                successor = state.generate_successor(agent_index, action)
+                value = self._expectimax(successor, next_depth, next_agent)
+                values.append(value)
+
+            min_val = min(values)
+            avg_val = sum(values) / len(values)
+            return (1 - self.prob) * min_val + self.prob * avg_val
