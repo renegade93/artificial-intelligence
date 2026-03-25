@@ -33,6 +33,7 @@ def backtracking_search(csp: DroneAssignmentCSP) -> dict[str, str] | None:
         # check if assignment is complete
         if csp.is_complete(assignment):
             print(f"Assignments completed: {len(assignment)} ✅")
+            print(f"{spaces}Complete assignment found: {assignment}")
             return assignment
         
         # grab a variable that isn't assigned yet (order wont't matter in this case)
