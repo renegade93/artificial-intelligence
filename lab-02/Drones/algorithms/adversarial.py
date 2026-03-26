@@ -153,8 +153,53 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         - Update beta at MIN nodes: beta = min(beta, value).
         - Pass alpha and beta through the recursive calls.
         """
-        # TODO: Implement your code here (BONUS)
-        return None
+        def alphabeta(current_state, agent_index, depth, alpha, beta):
+            if current_state.is_win() or current_state.is_lose() or depth == self.depth:
+                return self.evaluation_function(current_state)
+
+            legal_actions = current_state.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(current_state)
+            num_agents = current_state.get_num_agents()
+            next_agent = (agent_index + 1) % num_agents
+            next_depth = depth + 1 if next_agent == 0 else depth
+            if agent_index == 0:
+                v = float('-inf')
+                for action in legal_actions:
+                    successor = current_state.generate_successor(agent_index, action)
+                    v = max(v, alphabeta(successor, next_agent, next_depth, alpha, beta))
+                    if v > beta:
+                        return v
+                    alpha = max(alpha, v)
+                return v
+            else:
+                v = float('inf')
+                for action in legal_actions:
+                    successor = current_state.generate_successor(agent_index, action)
+                    v = min(v, alphabeta(successor, next_agent, next_depth, alpha, beta))
+                    if v < alpha:
+                        return v
+                    beta = min(beta, v)
+                return v
+        legal_actions = state.get_legal_actions(0)
+
+        if not legal_actions:
+            return None
+
+        best_action = legal_actions[0]
+        best_value = float('-inf')
+        alpha = float('-inf')
+        beta = float('inf')
+        for action in legal_actions:
+            successor = state.generate_successor(0, action)
+            action_value = alphabeta(successor, 1, 0, alpha, beta)
+            
+            if action_value > best_value:
+                best_value = action_value
+                best_action = action
+            alpha = max(alpha, best_value)
+
+        return best_action
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
