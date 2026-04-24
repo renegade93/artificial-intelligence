@@ -67,7 +67,7 @@ def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
         
     return models
     
-    
+
 def check_satisfiable(formula: Formula) -> tuple[bool, dict[str, bool] | None]:
     """
     Determina si una formula es satisfacible.
@@ -86,9 +86,20 @@ def check_satisfiable(formula: Formula) -> tuple[bool, dict[str, bool] | None]:
     Hint: Genera todos los modelos con get_all_models(), luego evalua
           la formula en cada uno usando evaluate().
     """
-    # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa check_satisfiable()")
-    # === END YOUR CODE ===
+    if not formula:
+        return (False, None)
+    
+    # grab atoms from formula
+    atoms = formula.get_atoms()
+
+    # generate the models
+    models = get_all_models(atoms)
+
+    # evaluate each model
+    for model in models:
+        if formula.evaluate(model):
+            return (True, model)
+    return (False, None)
 
 
 def check_valid(formula: Formula) -> bool:
