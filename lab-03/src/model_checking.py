@@ -8,7 +8,8 @@ Hint: Usa las funciones get_atoms() y evaluate() de logic_core.py.
 
 from __future__ import annotations
 
-from src.logic_core import Formula
+
+from src.logic_core import And, Formula, Not
 
 
 def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
@@ -119,9 +120,8 @@ def check_valid(formula: Formula) -> bool:
     Hint: Una formula es valida si y solo si su negacion es insatisfacible.
           Alternativamente, verifica que sea verdadera en TODOS los modelos.
     """
-    # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa check_valid()")
-    # === END YOUR CODE ===
+    no_sat, _ = check_satisfiable(Not(formula))
+    return not no_sat
 
 
 def check_entailment(kb: list[Formula], query: Formula) -> bool:
@@ -144,10 +144,19 @@ def check_entailment(kb: list[Formula], query: Formula) -> bool:
           Es decir, no existe un modelo donde toda la KB sea verdadera
           y la query sea falsa.
     """
-    # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa check_entailment()")
-    # === END YOUR CODE ===
+    if not kb:
+        return check_valid(query)
+    
+    kb_formula = kb[0]
 
+    rest = kb[1:]
+    for formula in rest:
+        kb_formula = And(kb_formula, formula)
+    
+    full_formula = And(kb_formula, Not(query))
+    is_sat, _ = check_satisfiable(full_formula)
+
+    return not is_sat
 
 def truth_table(formula: Formula) -> list[tuple[dict[str, bool], bool]]:
     """
