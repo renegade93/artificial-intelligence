@@ -67,8 +67,7 @@ def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
         
     return models
     
-
-
+    
 def check_satisfiable(formula: Formula) -> tuple[bool, dict[str, bool] | None]:
     """
     Determina si una formula es satisfacible.
