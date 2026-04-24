@@ -31,22 +31,6 @@ def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
           Cada bit corresponde al valor de verdad de un atomo.
     """
     
-    # make sure atoms set exists
-    if not atoms:
-        return [{}]  
-    
-    # inits 
-    atoms_list = sorted(list(atoms))
-    total_rows = 2 ** len(atoms_list)
-    
-    # prepare table with empty dictionary
-    models = []
-    for _ in range(total_rows):
-        models.append({})
-        
-    # the first block of repeated values is always half of the total values of total columns
-    block_size = total_rows // 2
-    
     # fill out column by column
     if not atoms:
             return [{}]
@@ -54,18 +38,18 @@ def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
     atoms_list = sorted(list(atoms))
     total_rows = 2 ** len(atoms_list)
     
-    # 1. Prepare the empty table
+    # init models array
     models = []
     for _ in range(total_rows):
         models.append({})
         
-    # The first block size is exactly half of the total rows
+    # since we are operating column-wise, the first block size is exactly half of the total rows
     block_size = total_rows // 2
     
-    # 2. Fill column by column
+    # iterate over atoms
     for atom in atoms_list:
         
-        # Start with False to get the FF -> TT binary order
+        # we will start by adding false first
         current_value = False 
         counter = 0
         
@@ -73,12 +57,12 @@ def get_all_models(atoms: set[str]) -> list[dict[str, bool]]:
             models[row][atom] = current_value
             counter += 1
             
-            # If the counter hits the block size, alternate the boolean value
+            # if we hit the block size, toggle the boolean value
             if counter == block_size:
                 current_value = not current_value
                 counter = 0
                 
-        # Cut the block size in half for the next column (e.g., 4 -> 2 -> 1)
+        # for the next iteration, cut the block size in half for the next column 
         block_size = block_size // 2
         
     return models
