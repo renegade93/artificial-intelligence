@@ -5,8 +5,9 @@ El pipeline completo to_cnf() llama a todas las transformaciones en orden.
 
 from __future__ import annotations
 
-from src.logic_core import And, Atom, Formula, Not, Or
+from src.logic_core import And, Atom, Formula, Iff, Implies, Not, Or
 
+import src.logic_core as logic_core
 
 # --- FUNCION GUÍA SUMINISTRADA COMPLETA ---
 
@@ -60,7 +61,20 @@ def eliminate_iff(formula: Formula) -> Formula:
           y solo transforma cuando encuentras un Iff.
     """
     # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa eliminate_iff()")
+    match formula:
+        case Iff(a, b):
+            return And(Implies(eliminate_iff(a), eliminate_iff(b)), 
+                       Implies(eliminate_iff(b), eliminate_iff(a)))
+        case Implies(a, b):
+            return Implies(eliminate_iff(a), eliminate_iff(b))
+        case And(*args):
+            return And(*[eliminate_iff(arg) for arg in args])
+        case Or(*args):
+            return Or(*[eliminate_iff(arg) for arg in args])
+        case Not(a):
+            return Not(eliminate_iff(a))
+        case _:
+            return formula
     # === END YOUR CODE ===
 
 
@@ -81,7 +95,19 @@ def eliminate_implication(formula: Formula) -> Formula:
           solo los nodos Implies.
     """
     # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa eliminate_implication()")
+    match formula:
+        case Implies(a, b):
+            return Or(Not(eliminate_implication(a)), eliminate_implication(b))
+        case Iff(a, b):
+            return Iff(eliminate_implication(a), eliminate_implication(b))
+        case And(*args):
+            return And(*[eliminate_implication(arg) for arg in args])
+        case Or(*args):
+            return Or(*[eliminate_implication(arg) for arg in args])
+        case Not(a):
+            return Not(eliminate_implication(a))
+        case _:
+            return formula
     # === END YOUR CODE ===
 
 
@@ -111,7 +137,22 @@ def push_negation_inward(formula: Formula) -> Formula:
           asi que no necesitas manejar esos tipos.
     """
     # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa push_negation_inward()")
+    match formula:
+        case Not(And(*args)):
+            return Or(*[push_negation_inward(Not(arg)) for arg in args])
+        case Not(Or(*args)):
+            return And(*[push_negation_inward(Not(arg)) for arg in args])
+        case Not(Atom(name)):
+            return formula
+        case Not(a):
+            # Recurso de seguridad por si hay otras estructuras (ej: doble negación)
+            return Not(push_negation_inward(a))
+        case And(*args):
+            return And(*[push_negation_inward(arg) for arg in args])
+        case Or(*args):
+            return Or(*[push_negation_inward(arg) for arg in args])
+        case _:
+            return formula
     # === END YOUR CODE ===
 
 
@@ -138,7 +179,33 @@ def distribute_or_over_and(formula: Formula) -> Formula:
           asi que solo veras Atom, Not(Atom), And y Or.
     """
     # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa distribute_or_over_and()")
+    match formula:
+        case And(*args):
+            return And(*[distribute_or_over_and(arg) for arg in args])
+        case Or(*args):
+            # Primero distribuimos recursivamente en los hijos
+            dist_args = [distribute_or_over_and(arg) for arg in args]
+            
+            # Buscamos si algún hijo es un And
+            for i, arg in enumerate(dist_args):
+                match arg:
+                    case And(*and_args):
+                        # Separamos el resto de los argumentos del Or original
+                        other_args = dist_args[:i] + dist_args[i+1:]
+                        new_and_args = []
+                        
+                        # Distribuimos el resto de los elementos del Or sobre cada elemento del And
+                        for and_elem in and_args:
+                            new_or = Or(*(other_args + [and_elem]))
+                            # Recursamos en caso de que este nuevo Or contenga más Ands anidados
+                            new_and_args.append(distribute_or_over_and(new_or))
+                            
+                        return And(*new_and_args)
+            
+            # Si no se encontró ningún And, devolvemos el Or procesado
+            return Or(*dist_args)
+        case _:
+            return formula
     # === END YOUR CODE ===
 
 
@@ -164,7 +231,41 @@ def flatten(formula: Formula) -> Formula:
           Si al final solo queda 1 elemento, retornalo directamente.
     """
     # === YOUR CODE HERE ===
-    raise NotImplementedError("Implementa flatten()")
+    match formula:
+        case And(*args):
+            new_args = []
+            for arg in args:
+                flat_arg = flatten(arg)
+                match flat_arg:
+                    case And(*sub_args):
+                        new_args.extend(sub_args)
+                    case _:
+                        new_args.append(flat_arg)
+            if len(new_args) == 1:
+                return new_args[0]
+            return And(*new_args)
+            
+        case Or(*args):
+            new_args = []
+            for arg in args:
+                flat_arg = flatten(arg)
+                match flat_arg:
+                    case Or(*sub_args):
+                        new_args.extend(sub_args)
+                    case _:
+                        new_args.append(flat_arg)
+            if len(new_args) == 1:
+                return new_args[0]
+            return Or(*new_args)
+            
+        case Not(a):
+            return Not(flatten(a))
+        case Implies(a, b):
+            return Implies(flatten(a), flatten(b))
+        case Iff(a, b):
+            return Iff(flatten(a), flatten(b))
+        case _:
+            return formula
     # === END YOUR CODE ===
 
 
