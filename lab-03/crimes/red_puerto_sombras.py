@@ -15,15 +15,15 @@ El Oficial Duarte declara que el Marinero Pinto no estuvo en el puerto ese fin d
 El Marinero Pinto declara que el Oficial Duarte firmó los documentos por error administrativo.
 
 Como detective, he llegado a las siguientes conclusiones:
-Quien tiene registro oficial que lo ubica fuera del puerto durante el delito está descartado.
-Quien firma manifiestos de carga fraudulentos comete fraude documental.
-Quien tiene acceso a la bodega y fue visto introduciendo mercancía ilegal introduce contrabando.
-Quien comete fraude documental sin coartada es culpable.
-Quien introduce contrabando sin coartada es culpable.
-Dos personas comparten red si pertenecen al mismo cartel.
-Si dos culpables comparten red, su actividad constituye una operación conjunta.
-El testimonio de una persona descartada contra alguien es confiable.
-Una red está activa si al menos uno de sus miembros es culpable.
+/Quien tiene registro oficial que lo ubica fuera del puerto durante el delito está descartado.
+/Quien firma manifiestos de carga fraudulentos comete fraude documental.
+/Quien tiene acceso a la bodega y fue visto introduciendo mercancía ilegal introduce contrabando.
+/Quien comete fraude documental sin coartada es culpable.
+/Quien introduce contrabando sin coartada es culpable.
+/Dos personas comparten red si pertenecen al mismo cartel.
+/Si dos culpables comparten red, su actividad constituye una operación conjunta.
+/El testimonio de una persona descartada contra alguien es confiable.
+/Una red está activa si al menos uno de sus miembros es culpable.
 """
 
 from src.crime_case import CrimeCase, QuerySpec
@@ -39,10 +39,87 @@ def crear_kb() -> KnowledgeBase:
     oficial_duarte    = Term("oficial_duarte")
     marinero_pinto    = Term("marinero_pinto")
     inspector_nova    = Term("inspector_nova")
-    cartel_portuario  = Term("cartel_portuario")
+    cartel_portuario = Term("cartel_portuario")
 
     # === YOUR CODE HERE ===
+    #Hechos
+    kb.add_fact(Predicate("registro_oficial_fuera_del_puerto", (capitan_herrera,)))
+    kb.add_fact(Predicate("registro_oficial_fuera_del_puerto", (inspector_nova,)))
+    kb.add_fact(Predicate("manifiestos_fraudulentos", (oficial_duarte,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (oficial_duarte,)))
+    kb.add_fact(Predicate("acceso_irrestricto_bodega", (marinero_pinto,)))
+    kb.add_fact(Predicate("visto_introduciendo_ilegal", (marinero_pinto,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (marinero_pinto,)))
+    kb.add_fact(Predicate("pertenece_cartel", (oficial_duarte, cartel_portuario)))
+    kb.add_fact(Predicate("pertenece_cartel", (marinero_pinto, cartel_portuario)))
+    kb.add_fact(Predicate("distinto", (oficial_duarte, marinero_pinto)))
+    kb.add_fact(Predicate("distinto", (marinero_pinto, oficial_duarte)))
+    kb.add_fact(Predicate("reportado_informante", (oficial_duarte,)))
+    kb.add_fact(Predicate("reportado_informante", (marinero_pinto,)))
+    kb.add_fact(Predicate("acusa_a", (capitan_herrera, oficial_duarte)))
+    kb.add_fact(Predicate("declara_con_coartada", (oficial_duarte, marinero_pinto)))
+    kb.add_fact(Predicate("declara_con_coartada", (marinero_pinto, oficial_duarte)))
+    
+    # Reglas    
 
+    kb.add_rule(Rule(
+        head=Predicate("descartado", (Term("$X"),)),
+        body=(Predicate("registro_oficial_fuera_del_puerto", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("fraude_documental", (Term("$X"),)),
+        body=(Predicate("manifiestos_fraudulentos", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("introduce_contrabando", (Term("$X"),)),
+        body=(Predicate("acceso_irrestricto_bodega", (Term("$X"),)), Predicate("visto_introduciendo_ilegal", (Term("$X"),)))
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(Predicate("fraude_documental", (Term("$X"),)), Predicate("no_coartada_verificada", (Term("$X"),)))
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(Predicate("introduce_contrabando", (Term("$X"),)), Predicate("no_coartada_verificada", (Term("$X"),)))
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("comparten_red", (Term("$X"), Term("$Y"))),
+    body=(
+        Predicate("pertenece_cartel", (Term("$X"), Term("$R"))),
+        Predicate("pertenece_cartel", (Term("$Y"), Term("$R"))),
+        Predicate("distinto", (Term("$X"), Term("$Y"))),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("operacion_conjunta", (Term("$X"), Term("$Y"))),
+    body=(
+        Predicate("culpable", (Term("$X"),)),
+        Predicate("culpable", (Term("$Y"),)),
+        Predicate("comparten_red", (Term("$X"), Term("$Y"))),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("testimonio_confiable", (Term("$X"), Term("$Y"))),
+    body=(
+        Predicate("descartado", (Term("$X"),)),
+        Predicate("acusa_a", (Term("$X"), Term("$Y"))),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("red_activa", (Term("$R"),)),
+    body=(
+        Predicate("pertenece_cartel", (Term("$X"), Term("$R"))),
+        Predicate("culpable", (Term("$X"),)),
+    )
+    ))
     # === END YOUR CODE ===
 
     return kb

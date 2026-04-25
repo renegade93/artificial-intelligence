@@ -12,12 +12,12 @@ Reynaldo declara que Margot estuvo con él en la cocina toda la noche.
 Reynaldo no tiene coartada verificada por ningún testigo independiente.
 
 Como detective, he llegado a las siguientes conclusiones:
-Quien tiene huellas en el arma del crimen tiene evidencia directa en su contra.
-Quien estuvo lejos de la escena durante el crimen está descartado como culpable.
-El testimonio de alguien descartado como culpable es confiable.
-Quien tiene evidencia directa en su contra y no tiene coartada verificada es culpable.
-Quien da coartada a un culpable lo está encubriendo.
-Si dos personas se dan coartada mutuamente, existe una coartada cruzada entre ellas.
+/Quien tiene huellas en el arma del crimen tiene evidencia directa en su contra.
+/Quien estuvo lejos de la escena durante el crimen está descartado como culpable.
+/El testimonio de alguien descartado como culpable es confiable.
+/Quien tiene evidencia directa en su contra y no tiene coartada verificada es culpable.
+/Quien da coartada a un culpable lo está encubriendo.
+/Si dos personas se dan coartada mutuamente, existe una coartada cruzada entre ellas.
 """
 
 from src.crime_case import CrimeCase, QuerySpec
@@ -34,9 +34,61 @@ def crear_kb() -> KnowledgeBase:
     pablo          = Term("pablo")
     bernardo       = Term("bernardo")
     frasco_arsenico = Term("frasco_arsenico")
+    biblioteca      = Term("biblioteca")
 
     # === YOUR CODE HERE ===
+    # Hechos
+    kb.add_fact(Predicate("escena", (biblioteca,)))
+    kb.add_fact(Predicate("huellas_en", (reynaldo, frasco_arsenico)))
+    kb.add_fact(Predicate("arma_crimen", (frasco_arsenico,)))
+    kb.add_fact(Predicate("lejos_escena", (pablo,)))
+    kb.add_fact(Predicate("lejos_escena", (bernardo,)))
+    kb.add_fact(Predicate("acusa", (pablo, reynaldo)))
+    kb.add_fact(Predicate("da_coartada", (margot, reynaldo)))
+    kb.add_fact(Predicate("da_coartada", (reynaldo, margot)))
+    kb.add_fact(Predicate("sin_coartada_verificada", (reynaldo,)))
+    kb.add_fact(Predicate("distinto", (margot, reynaldo)))
+    kb.add_fact(Predicate("distinto", (reynaldo, margot)))
+    
+    # Reglas
+    kb.add_rule(Rule(
+    head=Predicate("evidencia_directa", (Term("$X"),)),
+    body=(
+        Predicate("huellas_en", (Term("$X"), Term("$A"))),
+        Predicate("arma_crimen", (Term("$A"),)),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("descartado", (Term("$X"),)),
+        body=(Predicate("lejos_escena", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("testimonio_confiable", (Term("$X"), Term("$Y"))),
+        body=(Predicate("acusa", (Term("$X"), Term("$Y"))), Predicate("descartado", (Term("$X"),)))
+    ))
 
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(Predicate("evidencia_directa", (Term("$X"),)), Predicate("sin_coartada_verificada", (Term("$X"),)))
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("encubridor", (Term("$X"),)),
+        body=(Predicate("da_coartada", (Term("$X"), Term("$Y"))), Predicate("culpable", (Term("$Y"),)))
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("coartada_cruzada", (Term("$X"), Term("$Y"))),
+    body=(
+        Predicate("da_coartada", (Term("$X"), Term("$Y"))),
+        Predicate("da_coartada", (Term("$Y"), Term("$X"))),
+        Predicate("distinto", (Term("$X"), Term("$Y"))),
+    )
+    ))
+    
+    
     # === END YOUR CODE ===
 
     return kb

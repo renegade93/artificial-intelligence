@@ -14,14 +14,14 @@ El Asistente Mora acusa directamente al Técnico Ríos.
 El Técnico Ríos declara que el Asistente Mora estuvo con él durante todo el fin de semana.
 
 Como detective, he llegado a las siguientes conclusiones:
-Documentación oficial de ausencia del país constituye coartada verificada.
-Un registro oficial de conferencia también constituye coartada verificada.
-Quien tiene coartada verificada queda descartado como autor del sabotaje.
-Quien recibió pagos de una empresa que se beneficia del sabotaje tiene conflicto de intereses con ella.
-El conflicto de intereses con la empresa beneficiada constituye motivo económico para el sabotaje.
-Quien tuvo acceso registrado al lugar saboteado estuvo en el momento del crimen.
-Quien sin coartada tiene motivo económico y estuvo en el lugar del sabotaje es culpable.
-La denuncia de alguien que también estuvo en el lugar del sabotaje es una denuncia informada.
+/Documentación oficial de ausencia del país constituye coartada verificada.
+/Un registro oficial de conferencia también constituye coartada verificada.
+/Quien tiene coartada verificada queda descartado como autor del sabotaje.
+/Quien recibió pagos de una empresa que se beneficia del sabotaje tiene conflicto de intereses con ella.
+/El conflicto de intereses con la empresa beneficiada constituye motivo económico para el sabotaje.
+/Quien tuvo acceso registrado al lugar saboteado estuvo en el momento del crimen.
+/Quien sin coartada tiene motivo económico y estuvo en el lugar del sabotaje es culpable.
+/La denuncia de alguien que también estuvo en el lugar del sabotaje es una denuncia informada.
 """
 
 from src.crime_case import CrimeCase, QuerySpec
@@ -41,7 +41,65 @@ def crear_kb() -> KnowledgeBase:
     sala_cultivos  = Term("sala_cultivos")
 
     # === YOUR CODE HERE ===
+    #Hechos
+    kb.add_fact(Predicate("documentacion_oficial", (dra_santos,)))
+    kb.add_fact(Predicate("registro_conferencia", (director_vega,)))
+    kb.add_fact(Predicate("despedido_filtrar_informacion", (tec_rios,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (tec_rios,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (asistente_mora,)))
+    kb.add_fact(Predicate("acceso_en_sabado", (tec_rios, sala_cultivos)))
+    kb.add_fact(Predicate("acceso_en_sabado", (asistente_mora, sala_cultivos)))
+    kb.add_fact(Predicate("recibio_pagos_de", (tec_rios, syntek_corp)))
+    kb.add_fact(Predicate("acusa_a", (asistente_mora, tec_rios)))
+    kb.add_fact(Predicate("declara_compañia_fin_semana_con", (tec_rios, asistente_mora)))
+    kb.add_fact(Predicate("empresa_beneficiada", (syntek_corp,)))
+    
+    #Reglas
+    kb.add_rule(Rule(
+        head=Predicate("coartada_verificada", (Term("$X"),)),
+        body=(Predicate("documentacion_oficial", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("coartada_verificada", (Term("$X"),)),
+        body=(Predicate("registro_conferencia", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("descartado", (Term("$X"),)),
+        body=(Predicate("coartada_verificada", (Term("$X"),)),)
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("conflicto_intereses", (Term("$X"), Term("$Y"))),
+    body=(
+        Predicate("recibio_pagos_de", (Term("$X"), Term("$Y"))),
+        Predicate("empresa_beneficiada", (Term("$Y"),)),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+    head=Predicate("motivo_economico", (Term("$X"),)),
+    body=(
+        Predicate("conflicto_intereses", (Term("$X"), Term("$Y"))),
+        Predicate("empresa_beneficiada", (Term("$Y"),)),
+    )
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("acceso_en_momento", (Term("$X"),)),
+        body=(Predicate("acceso_en_sabado", (Term("$X"), sala_cultivos)),)
+    ))
+    
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(Predicate("no_coartada_verificada", (Term("$X"),)), Predicate("motivo_economico", (Term("$X"),)), Predicate("acceso_en_momento", (Term("$X"),))),
+    ))
 
+    kb.add_rule(Rule(
+        head=Predicate("denuncia_informada", (Term("$X"), Term("$Y"))),
+        body=(Predicate("acusa_a", (Term("$X"), Term("$Y"))), Predicate("acceso_en_momento", (Term("$X"),)))
+    ))
     # === END YOUR CODE ===
 
     return kb
