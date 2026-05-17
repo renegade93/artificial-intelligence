@@ -177,8 +177,75 @@ def regress(goal_set: State, action: Action) -> State | None:
          Check relevance first, then check for contradictions, then compute.
     """
     ### Your code here ###
+    # Action must achieve at least one current goal fluent.
+    if action.add_list.isdisjoint(goal_set):
+        return None
+
+    # Action cannot delete a fluent required by the goal.
+    if not action.del_list.isdisjoint(goal_set):
+        return None
+
+    remaining_goals = goal_set - action.add_list
+
+    # Negative preconditions cannot contradict required positive goals.
+    if not action.precond_neg.isdisjoint(remaining_goals):
+        return None
+
+    regressed_goal = remaining_goals | action.precond_pos
+
+    return frozenset(regressed_goal)
 
     ### End of your code ###
+    
+def has_contradiction(goal: State) -> bool:
+    """
+    Detect obvious impossible partial goals.
+    """
+
+    robot_locations = set()
+    object_locations = {}
+    holding_objects = set()
+    hands_free = False
+
+    for fluent in goal:
+        pred = fluent[0]
+
+        if pred == "At":
+            obj = fluent[1]
+            loc = fluent[2]
+
+            if obj == "robot":
+                robot_locations.add(loc)
+
+            if obj not in object_locations:
+                object_locations[obj] = set()
+            object_locations[obj].add(loc)
+
+        elif pred == "Holding":
+            holding_objects.add(fluent[2])
+
+        elif pred == "HandsFree":
+            hands_free = True
+
+    # Robot cannot be in two places at once.
+    if len(robot_locations) > 1:
+        return True
+
+    # Same object/patient/supplies cannot be in two places at once.
+    for _, locations in object_locations.items():
+        if len(locations) > 1:
+            return True
+
+    # Robot cannot be hands free and holding something at the same time.
+    if hands_free and len(holding_objects) > 0:
+        return True
+
+    # An object cannot be held and also required to be At some location.
+    for obj in holding_objects:
+        if obj in object_locations:
+            return True
+
+    return False
 
 
 def backwardSearch(problem: Problem) -> list[Action]:
@@ -200,6 +267,68 @@ def backwardSearch(problem: Problem) -> list[Action]:
          Pickable) that are false in the initial state — these are dead ends.
     """
     ### Your code here ###
+
+    initial_state = problem.getStartState()
+    initial_goal = problem.goal
+
+    frontier = Queue()
+    frontier.push((initial_goal, []))
+
+    visited = set()
+    all_actions = get_all_groundings(problem.domain, problem.objects)
+
+    static_predicates = {"Adjacent", "MedicalPost", "Pickable"}
+
+    expanded = 0
+
+    while not frontier.isEmpty():
+        current_goal, plan = frontier.pop()
+
+        if current_goal in visited:
+            continue
+
+        visited.add(current_goal)
+        expanded += 1
+
+        # Debug opcional para ver que no se quede callado.
+        if expanded % 1000 == 0:
+            print(f"Backward expanded: {expanded}, frontier: {len(frontier.list)}, goal size: {len(current_goal)}")
+
+        # Success: initial state satisfies the regressed partial goal.
+        if current_goal.issubset(initial_state):
+            print(f"Backward expanded total: {expanded}")
+            return plan
+
+        unsatisfied_goals = current_goal - initial_state
+
+        for action in all_actions:
+            # Only actions that achieve an unsatisfied goal are useful.
+            if action.add_list.isdisjoint(unsatisfied_goals):
+                continue
+
+            regressed_goal = regress(current_goal, action)
+
+            if regressed_goal is None:
+                continue
+
+            # Prune impossible static requirements.
+            impossible_static = any(
+                fluent[0] in static_predicates and fluent not in initial_state
+                for fluent in regressed_goal
+            )
+
+            if impossible_static:
+                continue
+
+            # Prune contradictory partial goals.
+            if has_contradiction(regressed_goal):
+                continue
+
+            if regressed_goal not in visited:
+                frontier.push((regressed_goal, [action] + plan))
+
+    print(f"Backward expanded total: {expanded}")
+    return []
 
     ### End of your code ###
 
