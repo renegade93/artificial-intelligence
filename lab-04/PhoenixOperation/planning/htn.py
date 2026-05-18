@@ -214,10 +214,7 @@ def build_htn_hierarchy(problem: Problem) -> list[HLA]:
     # -------------------------------------------------
     # Si no existe camino
     # -------------------------------------------------
-        print("NAVIGATE")
-        print("FROM:", from_cell)
-        print("TO:", to_cell)
-        print("PATH:", path)
+        
         if path is None:
             return HLA(
                 f"Navigate({from_cell}->{to_cell})",
