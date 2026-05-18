@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from planning.pddl import ActionSchema, State, Objects
+from planning.pddl import (
+    ActionSchema,
+    State,
+    Objects,
+    get_all_groundings,
+    get_applicable_actions,
+)
 
 
 def nullHeuristic(
@@ -11,6 +17,23 @@ def nullHeuristic(
 ) -> float:
     """Trivial heuristic — always returns 0 (equivalent to uniform-cost search)."""
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Cache de groundings — evita re-generar todos los Action grounded
+# en cada llamada de la heurística (A* la llama miles de veces).
+# Se invalida con la identidad de (domain, objects), que para un mismo
+# Problem permanece estable durante toda la búsqueda.
+# ---------------------------------------------------------------------------
+
+_GROUNDINGS_CACHE: dict[tuple[int, int], list] = {}
+
+
+def _cached_groundings(domain: list[ActionSchema], objects: Objects) -> list:
+    key = (id(domain), id(objects))
+    if key not in _GROUNDINGS_CACHE:
+        _GROUNDINGS_CACHE[key] = get_all_groundings(domain, objects)
+    return _GROUNDINGS_CACHE[key]
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +68,32 @@ def ignorePreconditionsHeuristic(
          Remember: with no preconditions, every grounding is "applicable".
     """
     ### Your code here ###
+    unsatisfied = goal - state
+    if not unsatisfied:
+        return 0
 
+    # Sin precondiciones, todo grounding es candidato.
+    all_actions = _cached_groundings(domain, objects)
+
+    count = 0
+    while unsatisfied:
+        # Pick action cuyo add_list cubra más fluentes pendientes.
+        best_cover_size = 0
+        best_cover: frozenset = frozenset()
+        for action in all_actions:
+            cover = action.add_list & unsatisfied
+            if len(cover) > best_cover_size:
+                best_cover_size = len(cover)
+                best_cover = cover
+
+        if best_cover_size == 0:
+            # Ningún add_list aporta a los pendientes → objetivo inalcanzable.
+            return float("inf")
+
+        unsatisfied = unsatisfied - best_cover
+        count += 1
+
+    return count
     ### End of your code ###
 
 
@@ -79,5 +127,59 @@ def ignoreDeleteListsHeuristic(
          each step (preconditions still apply in the relaxed model).
     """
     ### Your code here ###
+    if goal.issubset(state):
+        return 0
 
+    all_actions = _cached_groundings(domain, objects)
+
+    current = set(state)
+    steps = 0
+    # Cota de seguridad: el problema relajado es monótono, en n iteraciones
+    # con n = |fluentes totales| se alcanza el punto fijo.
+    max_iterations = 10_000
+
+    while not goal.issubset(current):
+        unsatisfied = goal - current
+
+        # Acción aplicable que más fluentes pendientes agrega.
+        best_action = None
+        best_added = 0
+        # En el problema relajado las precondiciones siguen evaluándose,
+        # pero como nunca borramos nada, una acción aplicada una vez nunca
+        # vuelve a serlo "necesaria" sobre los mismos fluentes nuevos.
+        for action in all_actions:
+            if not action.precond_pos.issubset(current):
+                continue
+            if not action.precond_neg.isdisjoint(current):
+                continue
+            new_in_goal = (action.add_list & unsatisfied)
+            if len(new_in_goal) > best_added:
+                best_added = len(new_in_goal)
+                best_action = action
+
+        if best_action is None:
+            # No hay acción aplicable que contribuya al objetivo.
+            # Buscamos cualquier acción aplicable que agregue fluentes nuevos,
+            # para habilitar futuras acciones (relajación monótona).
+            for action in all_actions:
+                if not action.precond_pos.issubset(current):
+                    continue
+                if not action.precond_neg.isdisjoint(current):
+                    continue
+                new_fluents = action.add_list - current
+                if new_fluents:
+                    best_action = action
+                    break
+
+            if best_action is None:
+                return float("inf")
+
+        # Aplicar en modo relajado: solo agregar, nunca borrar.
+        current = current | set(best_action.add_list)
+        steps += 1
+
+        if steps > max_iterations:
+            return float("inf")
+
+    return steps
     ### End of your code ###
